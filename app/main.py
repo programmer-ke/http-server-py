@@ -19,7 +19,7 @@ def main():
     print(f"message received: {chunks}")
     # write to socket
     response_text = "HTTP/1.1 200 OK\r\n\r\n"
-    client_socket.sendall(bytes(response_text))
+    client_socket.sendall(bytes(response_text, "utf-8"))
     # close socket - necessary?
 
 
