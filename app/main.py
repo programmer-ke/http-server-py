@@ -17,12 +17,15 @@ def main():
 
 
 def process_request(request):
-    first_line, *args = request.split("\r\n")
+    first_line, *rest = request.split("\r\n")
     _, path, _ =  first_line.split(" ")
-    if path == "/":
-        response = "HTTP/1.1 200 OK\r\n\r\n"
-    else:
-        response = "HTTP/1.1 404 Not Found\r\n\r\n"
+    response_body = path.replace("/echo/", "")
+    response = (
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain\r\n"
+        f"Content-Length: {len(response_body)}\r\n\r\n"
+        f"{response_body}"
+    )
     return response
 
 
