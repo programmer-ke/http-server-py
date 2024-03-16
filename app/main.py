@@ -1,4 +1,14 @@
 import socket
+import re
+
+REQUEST_PATTERN = re.compile("""
+(?P<first_line>(?P<method>[a-zA-Z]+)\s(?P<path>.+)\s(HTTP\/1.1))
+\\r\\n
+(?P<headers>(.+:.+\\r\\n)*)  # match zero or more headers
+\\r\\n
+(?P<body>.*)  # optional body
+""", re.VERBOSE)
+
 
 def main():
     # You can use print statements as follows for debugging,
@@ -17,13 +27,13 @@ def main():
 
 
 def process_request(request):
-    first_line, *rest = request.split("\r\n")
-    _, path, _ =  first_line.split(" ")
+    matches = REQUEST_PATTERN.match(request)
+    path = matches.group("path")
+    headers = parse_headers(matches.group("headers"))
+
     if path == "/":
         response = "HTTP/1.1 200 OK\r\n\r\n"
-    elif not path.startswith("/echo/"):
-        response = "HTTP/1.1 404 Not Found\r\n\r\n"
-    else:
+    elif path.startswith("/echo/"):
         response_body = path.replace("/echo/", "")
         response = (
             "HTTP/1.1 200 OK\r\n"
@@ -31,7 +41,23 @@ def process_request(request):
             f"Content-Length: {len(response_body)}\r\n\r\n"
             f"{response_body}"
         )
+    elif path == "/user-agent":
+        response_body = headers.get("User-Agent", "")
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            f"Content-Length: {len(response_body)}\r\n\r\n"
+            f"{response_body}"
+        )
+    else:
+        response = "HTTP/1.1 404 Not Found\r\n\r\n"
     return response
+
+
+def parse_headers(header_str):
+    headers = [h for h in header_str.strip().split("\r\n")]
+    headers = [h.split(":", maxsplit=1) for h in headers]
+    return {k.strip(): v.strip() for k, v in headers}
 
 
 if __name__ == "__main__":
