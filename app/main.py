@@ -1,11 +1,11 @@
 import socket
 import re
 
-REQUEST_PATTERN = re.compile("""
+REQUEST_PATTERN = re.compile(r"""
 (?P<first_line>(?P<method>[a-zA-Z]+)\s(?P<path>.+)\s(HTTP\/1.1))
-\\r\\n
-(?P<headers>(.+:.+\\r\\n)*)  # match zero or more headers
-\\r\\n
+\r\n
+(?P<headers>(.+:.+\r\n)*)  # match zero or more headers
+\r\n
 (?P<body>.*)  # optional body
 """, re.VERBOSE)
 
