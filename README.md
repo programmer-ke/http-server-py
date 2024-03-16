@@ -36,3 +36,10 @@ Note: This section is for stages 2 and beyond.
    `app/main.py`.
 1. Commit your changes and run `git push origin master` to submit your solution
    to CodeCrafters. Test output will be streamed to your terminal.
+
+# References
+
+- https://docs.python.org/3/howto/sockets.html#socket-howto
+- https://developer.mozilla.org/en-US/docs/Web/HTTP/Messages
+- https://developer.mozilla.org/en-US/docs/Glossary/CRLF
+- https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods

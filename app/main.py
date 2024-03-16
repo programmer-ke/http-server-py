@@ -1,6 +1,5 @@
 import socket
 
-
 def main():
     # You can use print statements as follows for debugging,
     # they'll be visible when running tests.
@@ -10,12 +9,21 @@ def main():
     client_socket, client_address = server_socket.accept()  # accept connection
     print(f"Received client connection via {client_address}")
     # read data from socket
-    msg = client_socket.recv(4096)
-    print(f"message received: {msg}")
+    byte_msg = client_socket.recv(4096)
+    response_text = process_request(byte_msg.decode("utf8"))
     # write to socket
-    response_text = "HTTP/1.1 200 OK\r\n\r\n"
     client_socket.sendall(bytes(response_text, "utf-8"))
     client_socket.close()
+
+
+def process_request(request):
+    first_line, *args = request.split("\r\n")
+    _, path, _ =  first_line.split(" ")
+    if path == "/":
+        response = "HTTP/1.1 200 OK\r\n\r\n"
+    else:
+        response = "HTTP/1.1 404 Not Found\r\n\r\n"
+    return response
 
 
 if __name__ == "__main__":
