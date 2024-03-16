@@ -43,3 +43,8 @@ Note: This section is for stages 2 and beyond.
 - https://developer.mozilla.org/en-US/docs/Web/HTTP/Messages
 - https://developer.mozilla.org/en-US/docs/Glossary/CRLF
 - https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
+
+# TODO
+
+- implement response object
+- implement server loop
