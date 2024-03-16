@@ -20,9 +20,9 @@ def process_request(request):
     first_line, *rest = request.split("\r\n")
     _, path, _ =  first_line.split(" ")
     if path == "/":
-        response = "HTTP/1.1 200 OK\r\n"
+        response = "HTTP/1.1 200 OK\r\n\r\n"
     elif not path.startswith("/echo/"):
-        response = "HTTP/1.1 404 Not Found\r\n"
+        response = "HTTP/1.1 404 Not Found\r\n\r\n"
     else:
         response_body = path.replace("/echo/", "")
         response = (
