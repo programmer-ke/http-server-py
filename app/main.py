@@ -2,6 +2,10 @@ import socket
 import re
 
 
+HEADER_ENCODING = "ISO-8859-1"
+UTF_8_ENCODING = "utf-8"
+
+
 def main():
 
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
@@ -9,35 +13,29 @@ def main():
 
     # read data from socket
     byte_msg = client_socket.recv(4096)
-    response_text = process_request(byte_msg)
+    response = process_request(Request(byte_msg))
     # write to socket
-    client_socket.sendall(bytes(response_text, "utf-8"))
+    client_socket.sendall(response.raw())
     client_socket.close()
 
 
-def process_request(request_bytes):
-    request = Request(request_bytes)
+def process_request(request):
 
     if request.path == "/":
-        response = "HTTP/1.1 200 OK\r\n\r\n"
+        response = Response(status=200)
     elif request.path.startswith("/echo/"):
-        response_body = path.replace("/echo/", "")
-        response = (
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            f"Content-Length: {len(response_body)}\r\n\r\n"
-            f"{response_body}"
-        )
+        response_body = request.path.replace("/echo/", "")
+        response = Response(status=200)
+        response.add_header("Content-Type", "text/plain")
+        response.set_body(response_body)
+
     elif request.path == "/user-agent":
         response_body = request.headers.get("User-Agent", "")
-        response = (
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            f"Content-Length: {len(response_body)}\r\n\r\n"
-            f"{response_body}"
-        )
+        response = Response(status=200)
+        response.add_header("Content-Type", "text/plain")
+        response.set_body(response_body)
     else:
-        response = "HTTP/1.1 404 Not Found\r\n\r\n"
+        response = Response(status=404)
     return response
 
 
@@ -53,8 +51,12 @@ class Request:
     )
 
     def __init__(self, request_bytes):
-        header_bytes = request_bytes[:request_bytes.find(b"\r\n\r\n") + len(b"\r\n")]
-        parsed_header = self.header_pattern.match(header_bytes.decode("ISO-8859-1"))
+        header_bytes = request_bytes[
+            : request_bytes.find(b"\r\n\r\n") + len(b"\r\n")
+        ]
+        parsed_header = self.header_pattern.match(
+            header_bytes.decode(HEADER_ENCODING)
+        )
 
         self.method = parsed_header.group("method")
         self.path = parsed_header.group("path")
@@ -70,6 +72,39 @@ class Request:
         headers = [h for h in header_str.strip().split("\r\n")]
         headers = [h.split(":", maxsplit=1) for h in headers]
         return {k.strip(): v.strip() for k, v in headers}
+
+
+class Response:
+
+    _status_mapping = {200: "200 OK", 404: "404 Not Found"}
+
+    def __init__(self, status):
+        self._status = status
+        self._headers = {}
+        self._body = None
+
+    def add_header(self, name, value):
+        self._headers[name] = value
+
+    def set_body(self, body):
+        self._body = body
+
+    def raw(self):
+        status_code = self._status_mapping[self._status]
+        response_parts = [f"HTTP/1.1 {status_code}\r\n"]
+
+        body = b""
+        if self._body:
+            body = self._body.encode(UTF_8_ENCODING)
+            self.add_header("Content-Length", len(body))
+
+        headers = [f"{k}: {v}\r\n" for k, v in self._headers.items()]
+        response_parts.extend(headers)
+        response_parts.append("\r\n")
+        full_header = "".join(response_parts).encode(HEADER_ENCODING)
+
+        return full_header + body
+
 
 if __name__ == "__main__":
     main()
