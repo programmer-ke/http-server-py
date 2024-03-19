@@ -1,5 +1,6 @@
-import socket
 import re
+import socket
+import threading
 
 
 HEADER_ENCODING = "ISO-8859-1"
@@ -8,13 +9,21 @@ UTF_8_ENCODING = "utf-8"
 
 def main():
 
-    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
-    client_socket, client_address = server_socket.accept()  # accept connection
+    with socket.create_server(
+        ("localhost", 4221), reuse_port=True
+    ) as server_socket:
+        while True:
+            client_socket, client_address = server_socket.accept()
+            print(f"Received new connection via {client_address}")
+            handler_thread = threading.Thread(
+                target=handle_connection, args=(client_socket,)
+            )
+            handler_thread.start()
 
-    # read data from socket
+
+def handle_connection(client_socket):
     byte_msg = client_socket.recv(4096)
     response = process_request(Request(byte_msg))
-    # write to socket
     client_socket.sendall(response.raw())
     client_socket.close()
 
