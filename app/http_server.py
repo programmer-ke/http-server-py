@@ -1,3 +1,4 @@
+import pathlib
 import re
 import socket
 import threading
@@ -6,11 +7,14 @@ import threading
 HEADER_ENCODING = "ISO-8859-1"
 UTF_8_ENCODING = "utf-8"
 RECV_SIZE_BYTES = 4096
+CHUNK_SIZE = 4096
+
 
 class Server:
-    def __init__(self, address, request_handler):
+    def __init__(self, address, request_handler, directory=None):
         self._address = address
         self._request_handler = request_handler
+        self._directory = directory
 
     def serve(self):
 
@@ -27,8 +31,11 @@ class Server:
 
     def handle_connection(self, client_socket):
         byte_msg = client_socket.recv(RECV_SIZE_BYTES)
-        response = self._request_handler(Request(byte_msg))
-        client_socket.sendall(bytes(response))
+        response = self._request_handler(Request(byte_msg), self._directory)
+        print("Starting the response")
+        for chunk in response:
+            client_socket.sendall(chunk)
+        print("Ended the response")
         client_socket.close()
 
 
@@ -82,12 +89,15 @@ class Response:
     def set_body(self, body):
         self._body = body
 
-    def raw(self):
+    def _raw(self):
         status_code = self._status_mapping[self._status]
         response_parts = [f"HTTP/1.1 {status_code}\r\n"]
 
         body = b""
-        if self._body:
+        if self._body and isinstance(self._body, pathlib.Path):
+            self.add_header("Content-Type", "application/octet-stream")
+            self.add_header("Content-Length", self._get_file_size(self._body))
+        elif self._body:
             body = self._body.encode(UTF_8_ENCODING)
             self.add_header("Content-Length", len(body))
 
@@ -95,8 +105,27 @@ class Response:
         response_parts.extend(headers)
         response_parts.append("\r\n")
         full_header = "".join(response_parts).encode(HEADER_ENCODING)
+        yield full_header
 
-        return full_header + body
+        if isinstance(self._body, pathlib.Path):
+            # body is a file, yield chunks until complete
+            with open(self._body, "rb") as file_to_send:
+                sentinel = b""
+                for chunk in iter(
+                    lambda: file_to_send.read(CHUNK_SIZE),
+                    sentinel,
+                ):
+                    yield chunk
+        else:
+            # body is bytes in memory, simply yield
+            yield body
+
+    @staticmethod
+    def _get_file_size(path):
+        return path.stat().st_size
 
     def __bytes__(self):
-        return self.raw()
+        return b"".join([chunk for chunk in self._raw()])
+
+    def __iter__(self):
+        return self._raw()

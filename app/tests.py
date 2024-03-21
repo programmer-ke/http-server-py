@@ -1,4 +1,7 @@
 import unittest
+import pathlib
+import tempfile
+
 from . import http_server
 
 
@@ -41,7 +44,7 @@ class ResponseTestCase(unittest.TestCase):
         response.add_header("Content-Type", "text/plain")
 
         self.assertEqual(
-            response.raw(),
+            bytes(response),
             b"HTTP/1.1 200 OK\r\n" b"Content-Type: text/plain\r\n" b"\r\n",
         )
 
@@ -54,7 +57,7 @@ class ResponseTestCase(unittest.TestCase):
             b"\r\n",
         )
 
-    def test_can_add_body(self):
+    def test_can_add_body_as_text(self):
         response = http_server.Response(status=200)
         response.add_header("Content-Type", "text/plain")
         body_text = "abcde"
@@ -68,6 +71,25 @@ class ResponseTestCase(unittest.TestCase):
             b"\r\n"
             b"abcde",
         )
+
+    def test_can_add_body_as_file_path(self):
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            file_path = pathlib.Path(tmpdirname) / "foobar.txt"
+            with open(file_path, "w") as destfile:
+                destfile.write("abc123")
+
+            response = http_server.Response(status=200)
+            response.set_body(file_path)
+
+            self.assertEqual(
+                bytes(response),
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: application/octet-stream\r\n"
+                b"Content-Length: 6\r\n"
+                b"\r\n"
+                b"abc123",
+            )
 
 
 if __name__ == "__main__":
