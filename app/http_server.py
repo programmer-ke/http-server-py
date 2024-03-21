@@ -81,7 +81,7 @@ class Response:
 
     _status_mapping = {
         200: "200 OK",
-        201: "Created",
+        201: "201 Created",
         404: "404 Not Found",
         424: "424 Failed Dependency",
         500: "500 Internal Server Error",
