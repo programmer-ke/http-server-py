@@ -76,7 +76,11 @@ class Request:
 
 class Response:
 
-    _status_mapping = {200: "200 OK", 404: "404 Not Found"}
+    _status_mapping = {
+        200: "200 OK",
+        404: "404 Not Found",
+        500: "500 Internal Server Error",
+    }
 
     def __init__(self, status):
         self._status = status

@@ -30,6 +30,7 @@ def process_request(request, directory):
             case "POST":
                 print(filename)
                 print(request.headers)
+                response = Response(status=500)
     elif request.path == "/user-agent":
         response_body = request.headers.get("User-Agent", "")
         response = Response(status=200)
