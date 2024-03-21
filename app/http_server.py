@@ -30,12 +30,11 @@ class Server:
                 handler_thread.start()
 
     def handle_connection(self, client_socket):
+
         byte_msg = client_socket.recv(RECV_SIZE_BYTES)
         response = self._request_handler(Request(byte_msg), self._directory)
-        print("Starting the response")
         for chunk in response:
             client_socket.sendall(chunk)
-        print("Ended the response")
         client_socket.close()
 
 
@@ -51,9 +50,9 @@ class Request:
     )
 
     def __init__(self, request_bytes):
-        header_bytes = request_bytes[
-            : request_bytes.find(b"\r\n\r\n") + len(b"\r\n")
-        ]
+
+        end_of_header_idx = request_bytes.find(b"\r\n\r\n") + len(b"\r\n")
+        header_bytes = request_bytes[:end_of_header_idx]
         parsed_header = self.header_pattern.match(
             header_bytes.decode(HEADER_ENCODING)
         )
@@ -67,6 +66,10 @@ class Request:
         else:
             self.headers = None
 
+        self.body = b""
+        if self.headers and "Content-Length" in self.headers:
+            self.body = request_bytes[end_of_header_idx + len(b"\r\n"):]
+
     @staticmethod
     def _parse_headers(header_str):
         headers = [h for h in header_str.strip().split("\r\n")]
@@ -78,7 +81,9 @@ class Response:
 
     _status_mapping = {
         200: "200 OK",
+        201: "Created",
         404: "404 Not Found",
+        424: "424 Failed Dependency",
         500: "500 Internal Server Error",
     }
 

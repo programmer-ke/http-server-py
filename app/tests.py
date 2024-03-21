@@ -33,6 +33,16 @@ class RequestTestCase(unittest.TestCase):
             req.headers, {"Content-Type": "plain-text", "Content-Length": "0"}
         )
 
+    def test_can_parse_header_and_body(self):
+        request_bytes = (
+            b"POST /foo HTTP/1.1\r\n"
+            b"Content-Length: 6\r\n"
+            b"\r\n"
+            b"abc123"
+        )
+        req = http_server.Request(request_bytes)
+        self.assertEqual(req.headers, {"Content-Length": "6"})
+        self.assertEqual(req.body, b"abc123")
 
 class ResponseTestCase(unittest.TestCase):
     def test_can_add_status_code(self):

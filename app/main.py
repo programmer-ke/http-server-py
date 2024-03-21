@@ -8,6 +8,7 @@ def process_request(request, directory):
 
     if request.path == "/":
         response = Response(status=200)
+
     elif request.path.startswith("/echo/"):
         response_body = request.path.replace("/echo/", "", 1)
         response = Response(status=200)
@@ -28,14 +29,19 @@ def process_request(request, directory):
                     response = Response(status=200)
                     response.set_body(directory / filename)
             case "POST":
-                print(filename)
-                print(request.headers)
-                response = Response(status=500)
+                if directory is None:
+                    response = Response(status=424)
+                else:
+                    with open(directory / filename, "wb") as destination_file:
+                        destination_file.write(request.body)
+                    response = Response(status=201)
+                
     elif request.path == "/user-agent":
         response_body = request.headers.get("User-Agent", "")
         response = Response(status=200)
         response.add_header("Content-Type", "text/plain")
         response.set_body(response_body)
+
     else:
         response = Response(status=404)
     return response
