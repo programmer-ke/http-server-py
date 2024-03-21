@@ -16,16 +16,20 @@ def process_request(request, directory):
 
     elif request.path.startswith("/files/"):
         filename = request.path.replace("/files/", "", 1)
-        if (
-            directory is None
-            or not (directory / filename).exists()
-            or not (directory / filename).is_file()
-        ):
-            response = Response(status=404)
-        else:
-            response = Response(status=200)
-            response.set_body(directory / filename)
-
+        match request.method:
+            case "GET":
+                if (
+                    directory is None
+                    or not (directory / filename).exists()
+                    or not (directory / filename).is_file()
+                ):
+                    response = Response(status=404)
+                else:
+                    response = Response(status=200)
+                    response.set_body(directory / filename)
+            case "POST":
+                print(filename)
+                print(request.headers)
     elif request.path == "/user-agent":
         response_body = request.headers.get("User-Agent", "")
         response = Response(status=200)
